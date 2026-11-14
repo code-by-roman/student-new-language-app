@@ -24,6 +24,11 @@ type TransLang = "es" | "ru";
 const TRANS_SPEECH_LANG: Record<TransLang, SpeechLang> = { es: "es-ES", ru: "ru-RU" };
 const TARGET_SPEECH_LANG: SpeechLang = "en-US";
 
+// After a correct answer: short pause once the sentence has been said,
+// and a safety limit in case the browser never reports the end of speech.
+const AFTER_CORRECT_PAUSE_MS = 600;
+const AFTER_CORRECT_MAX_MS   = 8000;
+
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
 }
@@ -44,9 +49,21 @@ export default function SentenceGame() {
   const [transLang,   setTransLang]   = useState<TransLang>("es");
   const dragOver = useRef<"bank" | number | null>(null);
   const { speak, cancel } = useSpeechSynthesis();
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Bumped whenever a sentence loads, so a late "speech ended" from an old
+  // sentence can't trigger another jump.
+  const advanceToken = useRef(0);
+  // Latest Enter handler, so the key listener below never sees stale state.
+  const onEnterRef = useRef<() => void>(() => {});
 
-  // Stop any speech when leaving the page.
-  useEffect(() => cancel, [cancel]);
+  function clearAdvance() {
+    advanceToken.current += 1;
+    if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    advanceTimer.current = null;
+  }
+
+  // Stop any speech and pending auto-advance when leaving the page.
+  useEffect(() => () => { clearAdvance(); cancel(); }, [cancel]);
 
   useEffect(() => {
     fetch("/api/game/sentences")
@@ -65,12 +82,18 @@ export default function SentenceGame() {
   function loadSentence(list: Sentence[], i: number) {
     const s = list[i];
     if (!s) return;
+    clearAdvance();
     const words: Word[] = s.words.map((w, idx) => ({ ...w, uid: `${w.form}-${idx}` }));
     setBank(shuffle(words));
     setSlots(Array(words.length).fill(null));
     setResult(null);
     setShowHint(false);
     setIndex(i);
+
+    // Read the new sentence aloud in the selected base language.
+    const lang: TransLang = s.translation?.[transLang] ? transLang : "es";
+    const prompt = s.translation?.[lang];
+    if (prompt) speak(prompt, TRANS_SPEECH_LANG[lang], 0.9);
   }
 
   function onDragStartBank(word: Word) { setDragItem({ word, from: "bank" }); }
@@ -125,15 +148,35 @@ export default function SentenceGame() {
   function checkAnswer() {
     if (slots.some(s => s === null)) return;
     const correct = slots.every((part, idx) => part?.position === idx);
+    setResult(correct ? "correct" : "wrong");
+    setScore(s => ({ correct: s.correct + (correct ? 1 : 0), total: s.total + 1 }));
+    if (user) saveSentenceResult(sentences[index].id, correct).catch(() => {});
     // Read the whole sentence: the model sentence when right, the learner's
     // own word order when wrong (so the answer isn't given away).
     const spoken = correct && sentences[index]?.full_text
       ? sentences[index].full_text
       : slots.map(w => w?.form ?? "").join(" ");
-    speak(spoken, TARGET_SPEECH_LANG, 0.9);
-    setResult(correct ? "correct" : "wrong");
-    setScore(s => ({ correct: s.correct + (correct ? 1 : 0), total: s.total + 1 }));
-    if (user) saveSentenceResult(sentences[index].id, correct).catch(() => {});
+
+    if (!correct) {
+      speak(spoken, TARGET_SPEECH_LANG, 0.9);
+      return;
+    }
+
+    // Correct: say the sentence, then move on to the next one by itself.
+    clearAdvance();
+    const token = advanceToken.current;
+    let started = false;
+    const goNext = () => {
+      if (started || token !== advanceToken.current) return;
+      started = true;
+      if (advanceTimer.current) clearTimeout(advanceTimer.current);
+      advanceTimer.current = setTimeout(() => {
+        advanceTimer.current = null;
+        if (token === advanceToken.current) next();
+      }, AFTER_CORRECT_PAUSE_MS);
+    };
+    const supported = speak(spoken, TARGET_SPEECH_LANG, 0.9, 1, goNext);
+    advanceTimer.current = setTimeout(goNext, supported ? AFTER_CORRECT_MAX_MS : 1200);
   }
 
   function tryAgain() {
@@ -159,6 +202,25 @@ export default function SentenceGame() {
 
   const current        = sentences[index];
   const allPlaced      = bank.length === 0;
+
+  // Enter = "Check answer" (when every word is placed and nothing is checked yet).
+  useEffect(() => {
+    onEnterRef.current = () => {
+      if (result === null && allPlaced) checkAnswer();
+    };
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || e.repeat) return;
+      // Let Enter on a focused button or field do its own thing.
+      const el = e.target;
+      if (el instanceof Element && el.closest("button, input, textarea, select, a")) return;
+      e.preventDefault();
+      onEnterRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const firstWord      = current?.words.find(w => w.position === 0)?.form ?? "";
   const translationLang: TransLang = current?.translation?.[transLang] ? transLang : "es";
   const translationText = current?.translation?.[translationLang] ?? "";
@@ -216,7 +278,7 @@ export default function SentenceGame() {
           <div className={S.progressRow}>
             <div className={S.progressTrack}>
               <div
-                className={`${S.progressFill} bg-[var(--grad-progress)]`}
+                className={`${S.progressFill} bg-[image:var(--grad-progress)]`}
                 style={{ width: `${((index + 1) / sentences.length) * 100}%` }}
               />
             </div>
@@ -358,7 +420,7 @@ export default function SentenceGame() {
             <>
               <button
                 onClick={tryAgain}
-                className={`${S.btnCheckBase} cursor-pointer bg-[var(--grad-btn-danger)] text-white`}
+                className={`${S.btnCheckBase} cursor-pointer bg-[image:var(--grad-btn-danger)] text-white`}
               >
                 🔄 Try again
               </button>
@@ -366,25 +428,18 @@ export default function SentenceGame() {
                 Skip →
               </button>
             </>
-          ) : result === "correct" ? (
-            <button
-              onClick={next}
-              className={`${S.btnCheckBase} cursor-pointer bg-[var(--grad-green-blue)] text-white`}
-            >
-              Next →
-            </button>
-          ) : (
+          ) : result === "correct" ? null : (
             <>
               <button
                 onClick={checkAnswer}
                 disabled={!allPlaced}
                 className={`${S.btnCheckBase} ${
                   allPlaced
-                    ? "cursor-pointer bg-[var(--grad-purple-green)] text-white"
-                    : "cursor-not-allowed bg-[var(--bg-surface)] text-[var(--text-tertiary)]"
+                    ? "cursor-pointer bg-[image:var(--grad-purple-green)] text-white"
+                    : "cursor-not-allowed bg-[image:var(--grad-purple-green)] text-white opacity-40"
                 }`}
               >
-                Check answer
+                Check answer <span className="opacity-70 text-xs font-semibold ml-1">(Enter)</span>
               </button>
               <button
                 onClick={() => setShowHint(h => !h)}
