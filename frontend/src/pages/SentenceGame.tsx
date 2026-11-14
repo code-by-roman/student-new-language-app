@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import { saveSentenceResult } from "../lib/progressService";
 import * as S from "../css/SentenceGame.styles";
+import { useSpeechSynthesis, type SpeechLang } from "../hooks/useSpeechSynthesis";
 
 interface Word {
   form:      string;
@@ -19,6 +20,9 @@ interface Sentence {
 }
 
 type TransLang = "es" | "ru";
+
+const TRANS_SPEECH_LANG: Record<TransLang, SpeechLang> = { es: "es-ES", ru: "ru-RU" };
+const TARGET_SPEECH_LANG: SpeechLang = "en-US";
 
 function shuffle<T>(arr: T[]): T[] {
   return [...arr].sort(() => Math.random() - 0.5);
@@ -39,6 +43,10 @@ export default function SentenceGame() {
   const [score,       setScore]       = useState({ correct: 0, total: 0 });
   const [transLang,   setTransLang]   = useState<TransLang>("es");
   const dragOver = useRef<"bank" | number | null>(null);
+  const { speak, cancel } = useSpeechSynthesis();
+
+  // Stop any speech when leaving the page.
+  useEffect(() => cancel, [cancel]);
 
   useEffect(() => {
     fetch("/api/game/sentences")
@@ -68,35 +76,61 @@ export default function SentenceGame() {
   function onDragStartBank(word: Word) { setDragItem({ word, from: "bank" }); }
   function onDragStartSlot(word: Word, slotIdx: number) { setDragItem({ word, from: slotIdx }); }
 
-  function onDrop(target: "bank" | number) {
-    if (!dragItem) return;
+  // Move a word from the bank or a slot to another slot or back to the bank.
+  // A word that lands in a slot is read aloud.
+  function moveWord(word: Word, from: "bank" | number, target: "bank" | number) {
     const newSlots = [...slots];
     const newBank  = [...bank];
     const existing = typeof target === "number" ? newSlots[target] : null;
 
-    if (dragItem.from === "bank") {
-      const bi = newBank.findIndex(w => w.uid === dragItem.word.uid);
+    if (from === "bank") {
+      const bi = newBank.findIndex(w => w.uid === word.uid);
       if (bi !== -1) newBank.splice(bi, 1);
     } else {
-      newSlots[dragItem.from] = null;
+      newSlots[from] = null;
     }
 
     if (typeof target === "number") {
-      newSlots[target] = dragItem.word;
-      if (existing) newBank.push(existing);
+      newSlots[target] = word;
+      if (existing && existing.uid !== word.uid) newBank.push(existing);
+      speak(word.form, TARGET_SPEECH_LANG);
     } else {
-      newBank.push(dragItem.word);
+      newBank.push(word);
     }
 
     setSlots(newSlots);
     setBank(newBank);
+  }
+
+  function onDrop(target: "bank" | number) {
+    if (!dragItem) return;
+    moveWord(dragItem.word, dragItem.from, target);
     setDragItem(null);
     dragOver.current = null;
+  }
+
+  // Double-click a bank word: put it in the first empty slot.
+  function placeInNextEmpty(word: Word) {
+    const empty = slots.findIndex(s => s === null);
+    if (empty === -1) return;
+    moveWord(word, "bank", empty);
+  }
+
+  // Double-click a placed word: send it back to the bank.
+  function returnToBank(slotIdx: number) {
+    const word = slots[slotIdx];
+    if (word) moveWord(word, slotIdx, "bank");
   }
 
   function checkAnswer() {
     if (slots.some(s => s === null)) return;
     const correct = slots.every((part, idx) => part?.position === idx);
+    // Read the whole sentence: the model sentence when right, the learner's
+    // own word order when wrong (so the answer isn't given away).
+    const spoken = correct && sentences[index]?.full_text
+      ? sentences[index].full_text
+      : slots.map(w => w?.form ?? "").join(" ");
+    speak(spoken, TARGET_SPEECH_LANG, 0.9);
     setResult(correct ? "correct" : "wrong");
     setScore(s => ({ correct: s.correct + (correct ? 1 : 0), total: s.total + 1 }));
     if (user) saveSentenceResult(sentences[index].id, correct).catch(() => {});
@@ -126,7 +160,8 @@ export default function SentenceGame() {
   const current        = sentences[index];
   const allPlaced      = bank.length === 0;
   const firstWord      = current?.words.find(w => w.position === 0)?.form ?? "";
-  const translationText = current?.translation?.[transLang] ?? current?.translation?.es ?? "";
+  const translationLang: TransLang = current?.translation?.[transLang] ? transLang : "es";
+  const translationText = current?.translation?.[translationLang] ?? "";
 
   if (loading) return (
     <div className={S.loadingScreen}>
@@ -209,7 +244,20 @@ export default function SentenceGame() {
                   ))}
                 </div>
               </div>
-              <p className={S.promptText}>{translationText || "—"}</p>
+              <div className="flex items-center gap-3">
+                <p className={`${S.promptText} flex-1`}>{translationText || "—"}</p>
+                {translationText && (
+                  <button
+                    type="button"
+                    onClick={() => speak(translationText, TRANS_SPEECH_LANG[translationLang], 0.9)}
+                    className={S.speakBtn}
+                    aria-label="Listen to the sentence"
+                    title="Listen"
+                  >
+                    🔊
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -235,6 +283,8 @@ export default function SentenceGame() {
                     }}
                     draggable={!!word}
                     onDragStart={() => word && onDragStartSlot(word, idx)}
+                    onDoubleClick={() => returnToBank(idx)}
+                    title={word ? "Double-click to send back" : undefined}
                     onDragOver={e => { e.preventDefault(); e.stopPropagation(); dragOver.current = idx; }}
                     onDrop={e => { e.stopPropagation(); onDrop(idx); }}
                   >
@@ -265,6 +315,8 @@ export default function SentenceGame() {
                     key={word.uid}
                     draggable
                     onDragStart={() => onDragStartBank(word)}
+                    onDoubleClick={() => placeInNextEmpty(word)}
+                    title="Drag, or double-click to place"
                     className={S.bankChip}
                     style={{ border: `2px solid ${st.border}`, background: st.bg }}
                   >

@@ -34,6 +34,7 @@ export const progressLabel = "text-xs text-[var(--text-secondary)] font-semibold
 export const promptBox     = "mb-6 bg-[var(--c-purple-dim)] border border-[var(--c-purple-tint-bd)] rounded-[16px] px-5 py-4";
 export const promptEyebrow = "text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[var(--c-purple-muted)] mb-1";
 export const promptText    = "text-[1.15rem] font-bold text-[var(--text-primary)] m-0";
+export const speakBtn      = "shrink-0 w-10 h-10 rounded-full border-[1.5px] border-[var(--c-purple-tint-bd)] bg-[var(--bg-card)] text-lg cursor-pointer flex items-center justify-center transition-transform duration-150 hover:scale-110";
 
 // Section labels
 export const sectionLabel = "text-[0.7rem] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)] mb-3";
