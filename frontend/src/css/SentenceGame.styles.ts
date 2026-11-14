@@ -10,7 +10,7 @@ export const errorText     = "text-[var(--text-secondary)] text-sm";
 
 // Header
 export const header       = "flex items-start justify-between mb-6";
-export const title        = "bg-[var(--grad-purple-green)] bg-clip-text text-transparent text-[1.75rem] font-extrabold m-0";
+export const title        = "bg-[image:var(--grad-purple-green)] bg-clip-text text-transparent text-[1.75rem] font-extrabold m-0";
 export const subtitle     = "text-[var(--text-secondary)] mt-1 text-sm";
 export const scoreBox     = "bg-[var(--bg-card)] border-[1.5px] border-[var(--border-subtle)] rounded-[16px] px-5 py-3 text-center";
 export const scoreNumber  = "text-2xl font-extrabold text-[var(--text-primary)]";
@@ -96,14 +96,14 @@ export const LEGEND = [
   { type: "preposition", label: "Preposition" },
 ];
 
-// Progress bar fill colour (used via bg-[var(--grad-progress)] in className)
+// Progress bar fill colour (used via bg-[image:var(--grad-progress)] in className)
 
 // Result box — use Tailwind conditional in JSX:
 // correct: bg-[var(--state-correct-bg)] border-[var(--state-correct-bd)] text-[var(--state-correct)]
 // wrong:   bg-[var(--state-wrong-bg)]   border-[var(--state-wrong-bd)]   text-[var(--state-wrong)]
 
 // Check button — use Tailwind conditional in JSX:
-// active:   cursor-pointer bg-[var(--grad-purple-green)] text-white
+// active:   cursor-pointer bg-[image:var(--grad-purple-green)] text-white
 // inactive: cursor-not-allowed bg-[var(--bg-surface)] text-[var(--text-tertiary)]
 
 // Dot nav — use Tailwind conditional in JSX:
