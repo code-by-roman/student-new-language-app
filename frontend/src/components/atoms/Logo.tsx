@@ -10,9 +10,9 @@ const sizes = {
 export default function Logo({ size = "md" }: LogoProps) {
   return (
     <div className="flex items-center gap-2">
-      <img src="/turtle.png" alt="TurtleTalk logo" className={sizes[size].img} />
+      <img src="/turtle.png" alt="TurtleTalks logo" className={sizes[size].img} />
       <span className={`${sizes[size].text} font-extrabold tracking-tight text-current`}>
-        TurtleTalk
+        TurtleTalks
       </span>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 import Logo   from "../atoms/Logo";
@@ -14,7 +14,8 @@ interface AppNavbarProps {
 export default function AppNavbar({ onSignIn }: AppNavbarProps) {
   const navigate  = useNavigate();
   const location  = useLocation();
-  const isLanding = location.pathname === "/";
+  const isLanding   = location.pathname === "/";
+  const isDashboard = location.pathname === "/dashboard";
 
   const { user, logout, changePassword } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -73,7 +74,11 @@ export default function AppNavbar({ onSignIn }: AppNavbarProps) {
     }
   };
 
-  const handleSignOut = () => { logout(); navigate("/"); };
+  const handleSignOut = async () => { await logout(); navigate("/"); };
+
+  // The logo always goes "home": the dashboard for logged-in users,
+  // the landing page for everyone else.
+  const homePath = user ? "/dashboard" : "/";
 
   const displayName  = user?.name  || user?.email || "";
   const displayEmail = user?.email || "";
@@ -83,19 +88,23 @@ export default function AppNavbar({ onSignIn }: AppNavbarProps) {
     <>
       <nav className={`fixed top-0 left-0 right-0 z-40 bg-[var(--nav-bg)] backdrop-blur-[12px] border-b border-[var(--nav-border)] px-6 py-3 min-h-[60px] flex items-center justify-center shadow-[var(--shadow-nav)] transition-transform duration-300 ${visible ? "translate-y-0" : "-translate-y-full"}`}>
 
-        {!isLanding && (
+        {!isLanding && !isDashboard && (
           <div className="absolute left-6">
             <button
-              onClick={() => location.pathname === "/dashboard" ? navigate("/") : navigate("/dashboard")}
-              title={location.pathname === "/dashboard" ? "Back to home" : "Back to dashboard"}
+              onClick={() => navigate(homePath)}
+              title="Back to dashboard"
               className="w-8 h-8 rounded-full bg-[var(--bg-surface)] border border-[var(--border-medium)] cursor-pointer flex items-center justify-center text-sm text-[var(--text-secondary)]"
             >←</button>
           </div>
         )}
 
-        <div className="text-[var(--text-primary)]">
+        <Link
+          to={homePath}
+          aria-label="TurtleTalks home"
+          className="text-[var(--text-primary)] no-underline"
+        >
           <Logo size="md" />
-        </div>
+        </Link>
 
         <div className="absolute right-6 flex items-center gap-3" ref={dropRef}>
           {/* ── Theme toggle ── */}

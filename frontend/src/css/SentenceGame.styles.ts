@@ -10,7 +10,7 @@ export const errorText     = "text-[var(--text-secondary)] text-sm";
 
 // Header
 export const header       = "flex items-start justify-between mb-6";
-export const title        = "bg-[var(--grad-purple-green)] bg-clip-text text-transparent text-[1.75rem] font-extrabold m-0";
+export const title        = "bg-[image:var(--grad-purple-green)] bg-clip-text text-transparent text-[1.75rem] font-extrabold m-0";
 export const subtitle     = "text-[var(--text-secondary)] mt-1 text-sm";
 export const scoreBox     = "bg-[var(--bg-card)] border-[1.5px] border-[var(--border-subtle)] rounded-[16px] px-5 py-3 text-center";
 export const scoreNumber  = "text-2xl font-extrabold text-[var(--text-primary)]";
@@ -34,6 +34,7 @@ export const progressLabel = "text-xs text-[var(--text-secondary)] font-semibold
 export const promptBox     = "mb-6 bg-[var(--c-purple-dim)] border border-[var(--c-purple-tint-bd)] rounded-[16px] px-5 py-4";
 export const promptEyebrow = "text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[var(--c-purple-muted)] mb-1";
 export const promptText    = "text-[1.15rem] font-bold text-[var(--text-primary)] m-0";
+export const speakBtn      = "shrink-0 w-10 h-10 rounded-full border-[1.5px] border-[var(--c-purple-tint-bd)] bg-[var(--bg-card)] text-lg cursor-pointer flex items-center justify-center transition-transform duration-150 hover:scale-110";
 
 // Section labels
 export const sectionLabel = "text-[0.7rem] font-bold uppercase tracking-[0.1em] text-[var(--text-secondary)] mb-3";
@@ -95,14 +96,14 @@ export const LEGEND = [
   { type: "preposition", label: "Preposition" },
 ];
 
-// Progress bar fill colour (used via bg-[var(--grad-progress)] in className)
+// Progress bar fill colour (used via bg-[image:var(--grad-progress)] in className)
 
 // Result box — use Tailwind conditional in JSX:
 // correct: bg-[var(--state-correct-bg)] border-[var(--state-correct-bd)] text-[var(--state-correct)]
 // wrong:   bg-[var(--state-wrong-bg)]   border-[var(--state-wrong-bd)]   text-[var(--state-wrong)]
 
 // Check button — use Tailwind conditional in JSX:
-// active:   cursor-pointer bg-[var(--grad-purple-green)] text-white
+// active:   cursor-pointer bg-[image:var(--grad-purple-green)] text-white
 // inactive: cursor-not-allowed bg-[var(--bg-surface)] text-[var(--text-tertiary)]
 
 // Dot nav — use Tailwind conditional in JSX:

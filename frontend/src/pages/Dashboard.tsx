@@ -51,6 +51,7 @@ export default function Dashboard() {
 
         {gameCard({ accent: "var(--grad-card-game)", label: "Quick start", heading: "Jump into a game", sub: "5 pairs per round · all languages", cta: "Play now →" }, () => navigate("/game"))}
         {gameCard({ accent: "var(--grad-card-sentence)", label: "Grammar · Drag & Drop", heading: "🧩 Sentence Builder", sub: "Arrange words in the right order", cta: "Play →" }, () => navigate("/sentence-builder"))}
+        {gameCard({ accent: "var(--grad-card-speaking)", label: "Pronunciation · Microphone", heading: "🎤 Speaking", sub: "Say the sentence out loud and get a score", cta: "Speak →" }, () => navigate("/speaking"))}
 
         {/* Language pair grid */}
         <div>

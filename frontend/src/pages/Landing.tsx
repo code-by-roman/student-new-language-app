@@ -127,7 +127,7 @@ export default function Landing() {
             <div className="device-tablet w-full pt-7 pr-7 pb-7 pl-[88px] bg-[var(--bg-card)] rounded-[26px] min-h-[340px]">
               <div className="relative z-[2] p-[18px_16px] flex flex-col gap-[14px]">
                 <div className="flex justify-between items-center mb-1">
-                  <span className="device-title">TurtleTalk</span>
+                  <span className="device-title">TurtleTalks</span>
                   <span className="text-[0.65rem] text-[var(--text-secondary)] font-semibold">🏆 Score: 4</span>
                 </div>
                 <div className="flex gap-[10px]">
@@ -162,7 +162,7 @@ export default function Landing() {
       <section className="py-24 bg-[var(--bg-base)]">
         <div className="max-w-[960px] mx-auto px-6">
           <p className="text-[0.72rem] font-bold uppercase tracking-[0.12em] text-[var(--c-green)] text-center m-0 mb-[10px]">
-            Why TurtleTalk
+            Why TurtleTalks
           </p>
           <h2 className="section-title font-black text-center m-0 mb-[52px] leading-[1.2] text-[var(--text-primary)]">
             Everything you need<br />to level up
