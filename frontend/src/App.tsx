@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, Link, useOutletContext } from "react-router-dom";
 import { useState } from "react";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -15,6 +15,7 @@ import AppNavbar       from "./components/organisms/AppNavbar";
 
 function RootLayout() {
   const [showAuth, setShowAuth] = useState(false);
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-base)]">
@@ -24,10 +25,13 @@ function RootLayout() {
       </div>
       <footer className="border-t border-[var(--border-subtle)] bg-[var(--bg-base)] text-sm text-[var(--text-tertiary)]">
         <div className="max-w-[1200px] mx-auto px-10 py-7 flex justify-between items-center flex-wrap gap-2">
-          <div className="flex items-center gap-[10px] font-bold text-[var(--text-primary)] text-base">
+          <Link
+            to={user ? "/dashboard" : "/"}
+            className="flex items-center gap-[10px] font-bold text-[var(--text-primary)] text-base no-underline"
+          >
             <img src="/turtle.png" alt="logo" className="w-7 h-7" />
-            TurtleTalk
-          </div>
+            TurtleTalks
+          </Link>
           <span>© 2026 · Built with ❤️ and a lot of vocabulary</span>
         </div>
       </footer>
@@ -35,18 +39,33 @@ function RootLayout() {
   );
 }
 
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-base)]">
+      <div className="w-10 h-10 border-[3px] border-[var(--border-medium)] border-t-[var(--c-orange)] rounded-full animate-spin" />
+    </div>
+  );
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-base)]">
-        <div className="w-10 h-10 border-[3px] border-[var(--border-medium)] border-t-[var(--c-orange)] rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <LoadingScreen />;
 
   return user ? <>{children}</> : <Navigate to="/" replace />;
+}
+
+// Public home page. Once a user is logged in, the dashboard is their home,
+// so "/" sends them there. While the sign-in modal is still open we let the
+// form finish its success animation; it navigates to /dashboard itself.
+function HomeRoute() {
+  const { user, loading } = useAuth();
+  const { showAuth } = useOutletContext<{ showAuth: boolean }>();
+
+  if (loading) return <LoadingScreen />;
+  if (user && !showAuth) return <Navigate to="/dashboard" replace />;
+
+  return <Landing />;
 }
 
 export default function App() {
@@ -56,7 +75,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route element={<RootLayout />}>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<HomeRoute />} />
 
             <Route element={<ProtectedRoute><ProtectedLayout /></ProtectedRoute>}>
               <Route path="/dashboard"            element={<Dashboard />} />

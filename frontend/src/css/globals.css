@@ -98,6 +98,7 @@
   /* Game / dashboard card gradients */
   --grad-card-game:         linear-gradient(135deg, #f7971e, #ff6b6b, #c471ed);
   --grad-card-sentence:     linear-gradient(135deg, #7c3aed, #4f46e5, #2563eb);
+  --grad-card-speaking:     linear-gradient(135deg, #10b981, #0d9488, #0891b2);
   --grad-btn-danger:        linear-gradient(135deg, #ef4444, #f97316);
   --grad-avatar:            linear-gradient(to bottom right, #f7971e, #ff6b6b);
   --grad-btn-primary:       linear-gradient(to right, #f7971e, #ff6b6b);
